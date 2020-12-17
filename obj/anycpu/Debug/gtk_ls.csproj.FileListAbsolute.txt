@@ -1,0 +1,6 @@
+/Users/phuntik/Projects/gtk_ls/bin/Debug/gtk_ls.exe
+/Users/phuntik/Projects/gtk_ls/bin/Debug/gtk_ls.pdb
+/Users/phuntik/Projects/gtk_ls/obj/anycpu/Debug/gtk_ls.csprojAssemblyReference.cache
+/Users/phuntik/Projects/gtk_ls/obj/anycpu/Debug/gtk_ls.csproj.CoreCompileInputs.cache
+/Users/phuntik/Projects/gtk_ls/obj/anycpu/Debug/gtk_ls.exe
+/Users/phuntik/Projects/gtk_ls/obj/anycpu/Debug/gtk_ls.pdb
