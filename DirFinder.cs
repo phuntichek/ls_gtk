@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading;
 using Gtk;
 
 namespace gtk_ls
@@ -10,44 +9,38 @@ namespace gtk_ls
 
     public class DirFinder
     {
-        static public Thread currentThread;
-
+        //some global variables
+        bool has_files = false;
+        bool ui_updated = false;
         string dir_path;
         string dir_name;
         string[] files = new string[0];
         string[] subdirs = new string[0];
+        public bool isRoot = false;
         TreeIter treeIter;
         List<DirFinder> subDirFinders = new List<DirFinder>();
 
+        //add directory + parent directory to the tree
         public DirFinder(string parentDir, string name, TreeIter parentTreeIter)
         {
             dir_path = parentDir + "/" + name;
             dir_name = name;
-            treeIter = MainClass.store.AppendValues(parentTreeIter, dir_name);
+            treeIter = parentTreeIter;
         }
 
-        public void fillThreaded()
+        //fill the tree
+        public void fill_data()
         {
-            ThreadStart starter = new ThreadStart(this.fill);
-            starter += () => {
-                // Do what you want in the callback
-                onFillComplete();
-            };
-            currentThread = new Thread(starter) { IsBackground = true };
-            currentThread.Start();
-        }
-
-        public void fill()
-        {
-            
-
+            MainClass.waitHandle.WaitOne();
+            MainClass.setCurDir(dir_name);
+            treeIter = MainClass.store.AppendValues(treeIter, dir_name);
             try
             {
                 files = Directory.GetFiles(dir_path, MainClass.regex);
             }
             catch (Exception e)
             {
-
+                Console.WriteLine(e.Message);
             }
             try
             {
@@ -55,51 +48,45 @@ namespace gtk_ls
             }
             catch (Exception e)
             {
+                Console.WriteLine(e.Message);
+            }
+            if (files != null)
+            {
+                if (files.Length > 0)
+                {
+                    for (int i = 0; i < files.Length; i++)
+                    {
+                        //filling files in tree
+                        files[i] = Path.GetFileName(files[i]);
+                        MainClass.store.AppendValues(treeIter, files[i]);
+                        if (i == files.Length - 1)
+                            MainClass.setCurFile(files[i]);
+                    }
+                    has_files = true;
+                }
                 
             }
             if (subdirs != null)
             {
+                //filling directories in tree 
                 for (int i = 0; i < subdirs.Length; i++)
                 {
-                    subdirs[i] = subdirs[i].Substring(dir_path.Length + 1);
+                    subdirs[i] = Path.GetFileName(subdirs[i]);
                 }
                 foreach (string dir in subdirs)
                 {
                     subDirFinders.Add(new DirFinder(dir_path, dir, treeIter));
                 }
-            }
-            if (files != null)
-            {
-                for (int i = 0; i < files.Length; i++)
+                foreach (DirFinder df in subDirFinders)
                 {
-                    files[i] = files[i].Substring(dir_path.Length + 1);
-                    // call GUI to add file
-                    //MainClass.store.AppendValues(treeIter, files[i]);
+                    df.fill_data();
+                    if (df.has_files)
+                        has_files = true;
                 }
             }
-        }
-
-        //public void fillRecursive(string regex)
-        //{
-        //    fill(regex);
-        //    foreach (DirFinder df in subDirFinders)
-        //    {
-        //        df.fillRecursive(regex);
-        //    }
-        //}
-
-        public void onFillComplete()
-        {
-            if (files != null)
+            if (!has_files)
             {
-                foreach (string file in files)
-                {
-                    MainClass.store.AppendValues(treeIter, file);
-                }
-            }
-            foreach (DirFinder df in subDirFinders)
-            {
-                df.fillThreaded();
+                MainClass.store.Remove(ref treeIter);
             }
         }
     }
